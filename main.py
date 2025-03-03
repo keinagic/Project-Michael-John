@@ -1,11 +1,10 @@
 import os
 from data import database, database_checker
 
-
 class FoolProofing:
     @staticmethod
     def create_tables():
-    # Create tables if they don't exist; make sure that there is a table to work with
+        # Create tables if they don't exist; make sure that there is a table to work with
         conn = database.create_connection()
         if not os.path.exists(database.DB_PATH):
             try:
@@ -28,7 +27,5 @@ class FoolProofing:
             conn.close()
 
 
-
 if __name__ == "__main__":
-    FoolProofing.create_tables()
-    FoolProofing.check_db_integrity()
+    pass

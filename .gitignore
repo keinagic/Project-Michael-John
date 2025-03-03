@@ -3,9 +3,6 @@ __pycache__/
 .pytest_cache/
 data/__pycache__/
 kots_interface/__pycache__/
-data/__pycache__/
-data/__pycache__/__init__.cpython-313.pyc
-data/__pycache__/database.cpython-313.pyc
-kots_interface/__pycache__/main_window.cpython-313.pyc
-kots_interface/__pycache__/register_trainee_window.cpython-313.pyc
-kots_interface/__pycache__/trainee_view_window.cpython-313.pyc
+
+trainees.db
+tester.py

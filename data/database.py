@@ -5,7 +5,6 @@ import datetime
 DB_PATH = Path("trainees.db")
 
 
-@staticmethod
 def create_connection():
     return sqlite3.connect(DB_PATH)
 
@@ -27,8 +26,7 @@ def create_tables(conn):
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS scores(
-            id INTEGER PRIMARY KEY,
-            trainee_id INTEGER,
+            trainee_id TEXT,
             score REAL,
             role TEXT CHECK(role IN ('Debater', 'Adjudicator')),
             type TEXT CHECK(type IN ('Training', 'Tournament')),
@@ -40,8 +38,8 @@ def create_tables(conn):
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS teams(
-            id INTEGER PRIMARY KEY,
-            format TEXT CHECK(format IN ('AsParl', 'BritParl')),
+            id INTEGER PRIMARY KEY, 
+            debate_format INTEGER, -- 1 for AsParl, 0 for BritParl
             team_name TEXT
         )
         """
@@ -50,9 +48,8 @@ def create_tables(conn):
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS team_members(
-            id INTEGER PRIMARY KEY,
             team_id INTEGER,
-            trainee_id INTEGER,
+            trainee_id TEXT,
             FOREIGN KEY(team_id) REFERENCES teams(id),
             FOREIGN KEY(trainee_id) REFERENCES trainees(unique_trainee_id)
         )
@@ -63,9 +60,9 @@ def create_tables(conn):
 
 class DatabaseFunctions:
     # Get the sequence number for the current month
+    @staticmethod
     def get_sequence_number(conn, current_month, current_year):
         c = conn.cursor()
-        # Get the maximum sequence number for the current month
         try:
             c.execute(
                 """
@@ -74,90 +71,70 @@ class DatabaseFunctions:
                 """,
                 (f"{current_year}{current_month}%",),
             )
-            # Extract the sequence number from the result
             sequence_number = c.fetchone()[0]
             if sequence_number is None:
                 sequence_number = 0
             else:
                 sequence_number = int(sequence_number[4:])
             return sequence_number
-
-        # Handle exceptions
         except sqlite3.Error as e:
             print(f"Error retrieving sequence number: {e}")
             return None
+
     # Generate a unique trainee ID
+    @staticmethod
     def generate_unique_trainee_id(conn):
-        # Get the current date
         current_date = datetime.datetime.now().date()
         current_month = current_date.strftime("%m")
         current_year = current_date.strftime("%y")
-        # Get the sequence number
         sequence_number = DatabaseFunctions.get_sequence_number(
             conn, current_month, current_year
         )
-        # Increment the sequence number and format it
         sequence_number_int = int(sequence_number) + 1
         sequence_number_str = str(sequence_number_int).zfill(3)
-        # Generate the unique trainee ID
         unique_trainee_id = f"{current_year}{current_month}{sequence_number_str}"
         return unique_trainee_id
 
     # Register a trainee
-    def register_trainee(conn, unique_trainee_id, name, role="Debater"):
+    @staticmethod
+    def register_trainee(conn, unique_trainee_id, last_name, first_name, novice_status=1):
         c = conn.cursor()
         try:
             c.execute(
                 """
-                INSERT INTO trainees (unique_trainee_id, name, role)
-                VALUES (?, ?)
+                INSERT INTO trainees (unique_trainee_id, last_name, first_name, novice_status)
+                VALUES (?, ?, ?, ?)
                 """,
-                (unique_trainee_id, name, role),
+                (unique_trainee_id, last_name, first_name, novice_status),
             )
             conn.commit()
-            trainee_id = c.lastrowid
-            print(f"Registered trainee: {trainee_id}")
-            return trainee_id
+            print(f"Registered trainee: {unique_trainee_id}")
+            return unique_trainee_id
         except sqlite3.Error as e:
             print(f"Error registering trainee: {e}")
             conn.rollback()
             return None
 
     # Update the novice status of a trainee
-    def update_novice_status(conn, trainee_id, novice_status):
+    @staticmethod
+    def update_novice_status(conn, unique_trainee_id, novice_status):
         c = conn.cursor()
         try:
             c.execute(
                 """
                 UPDATE trainees
                 SET novice_status = ?
-                WHERE id = ?
+                WHERE unique_trainee_id = ?
                 """,
-                (novice_status, trainee_id),
+                (novice_status, unique_trainee_id),
             )
             conn.commit()
         except sqlite3.Error as e:
             print(f"Error updating novice status: {e}")
             conn.rollback()
 
-    # Update the role of a trainee
-    def update_role(conn, trainee_id, role):
-        c = conn.cursor()
-        try:
-            c.execute(
-                """
-                UPDATE trainees
-                SET role = ?
-                WHERE id = ?
-                """,
-                (role, trainee_id),
-            )
-            conn.commit()
-        except sqlite3.Error as e:
-            print(f"Error updating role: {e}")
-            conn.rollback()
-
     # Add a score for a trainee
+    @staticmethod
     def add_score(conn, trainee_id, score, role, type):
         c = conn.cursor()
         try:
@@ -174,26 +151,28 @@ class DatabaseFunctions:
             conn.rollback()
 
     # Create a team
-    def create_team(conn, format, team_name):
+    @staticmethod
+    def create_team(conn, debate_format, team_name):
         c = conn.cursor()
         try:
             c.execute(
                 """
-                INSERT INTO teams (format, team_name)
+                INSERT INTO teams (debate_format, team_name)
                 VALUES (?, ?)
                 """,
-                (format, team_name),
+                (debate_format, team_name),
             )
             conn.commit()
             team_id = c.lastrowid
-            print(f"Created team: {team_id}")  # debug
+            print(f"Created team: {team_id}")
             return team_id
         except sqlite3.Error as e:
-            print(f"Error creating team: {e}, SQL: {c.last_executed}")  # debug
+            print(f"Error creating team: {e}")
             conn.rollback()
             return None
 
     # Add a trainee to a team
+    @staticmethod
     def add_team_member(conn, team_id, trainee_id):
         c = conn.cursor()
         try:
@@ -209,16 +188,17 @@ class DatabaseFunctions:
             print(f"Error adding team member: {e}")
             conn.rollback()
 
-    # Get all trainees
-    def get_trainee(conn, trainee_id):
+    # Get a trainee by unique_trainee_id
+    @staticmethod
+    def get_trainee(conn, unique_trainee_id):
         c = conn.cursor()
         try:
             c.execute(
                 """
                 SELECT * FROM trainees
-                WHERE id = ?
+                WHERE unique_trainee_id = ?
                 """,
-                (trainee_id,),
+                (unique_trainee_id,),
             )
             return c.fetchall()
         except sqlite3.Error as e:
