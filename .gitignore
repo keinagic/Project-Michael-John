@@ -2,4 +2,4 @@ test_database.py
 __pycache__/
 pytest_cache/
 data/__pycache__/
-kots_interfdace/__pycache__
+kots_interface/__pycache__/
