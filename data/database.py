@@ -16,7 +16,8 @@ def create_tables(conn):
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             novice_status INTEGER DEFAULT 1, --1 for Novice, 0 for Advanced
-            role TEXT CHECK(role IN ('Debater', 'Adjudicator') DEFAULT 'Debater'),
+            role TEXT CHECK(role IN ('Debater', 'Adjudicator')) DEFAULT 'Debater'
+        )
     """
     )
     c.execute(
@@ -28,6 +29,7 @@ def create_tables(conn):
             role TEXT CHECK(role IN ('Debater', 'Adjudicator')),
             type TEXT CHECK(type IN ('Training', 'Tournament')),
             FOREIGN KEY(trainee_id) REFERENCES trainees(id)
+        )
     """
     )
 
@@ -65,9 +67,13 @@ def register_trainee(conn, name, role="Debater"):
             (name, role),
         )
         conn.commit()
+        trainee_id = c.lastrowid
+        print(f"Registered trainee: {trainee_id}")
+        return trainee_id
     except sqlite3.Error as e:
         print(f"Error registering trainee: {e}")
         conn.rollback()
+        return None
 
 
 def update_novice_status(conn, trainee_id, novice_status):
