@@ -16,9 +16,9 @@ def create_tables(conn):
     c.execute(
         """
         CREATE TABLE IF NOT EXISTS trainees (
-            id INTEGER PRIMARY KEY,
-            unique_trainee_id TEXT UNIQUE,
-            name TEXT NOT NULL,
+            unique_trainee_id TEXT UNIQUE PRIMARY KEY,
+            last_name TEXT NOT NULL,
+            first_name TEXT NOT NULL,
             novice_status INTEGER DEFAULT 1 --1 for Novice, 0 for Advanced
         )
         """
