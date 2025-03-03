@@ -137,9 +137,13 @@ def create_team(conn, format, team_name):
             (format, team_name),
         )
         conn.commit()
+        team_id = c.lastrowid
+        print(f"Created team: {team_id}")  # debug
+        return team_id
     except sqlite3.Error as e:
-        print(f"Error creating team: {e}")
+        print(f"Error creating team: {e}, SQL: {c.last_executed}")  # debug
         conn.rollback()
+        return None
 
 
 def add_team_member(conn, team_id, trainee_id):
