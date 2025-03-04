@@ -1,10 +1,12 @@
 import sqlite3
 from pathlib import Path
+from cfg import CORE_ORGANIZATION_DATABASE as CORE_DB_PATH
 
 
 def create_connection(db_path: Path):
+    db_path = CORE_DB_PATH
     try:
-        db_path.parent.mkdir(parents=True, exist_ok=True)
+        CORE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(str(db_path))
         return conn
     except sqlite3.Error as e:
@@ -90,4 +92,3 @@ class CreateMainTables:
         except sqlite3.Error as e:
             print(f"Error creating team_members table: {e}")
         conn.commit()
-

@@ -1,7 +1,5 @@
 from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-USER_DATA_DIR = PROJECT_ROOT / "user_data"
+from cfg import CORE_ORGANIZATION_DIRECTORY as CORE_DIR
 
 
 class CoachInput:
@@ -14,6 +12,9 @@ class CoachInput:
     @staticmethod
     def get_database_list() -> list:
         # Hopefully useful enough to be used for UI eheheheh
-        database_paths = USER_DATA_DIR
-        db_files = [file.name for file in USER_DATA_DIR.glob("*.db") if file.is_file()]
+        database_paths = CORE_DIR
+        db_files = [file.name for file in CORE_DIR.glob("*.db") if file.is_file()]
         return db_files
+
+    def set_organization_name(user_organization: str) -> str:
+        return user_organization

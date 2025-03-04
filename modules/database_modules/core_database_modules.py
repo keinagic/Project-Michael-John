@@ -1,5 +1,8 @@
 import sqlite3
 import datetime
+import csv
+from pathlib import Path
+from cfg import CORE_ORGANIZATION_DATABASE as CORE_DB_PATH
 
 class CoreDatabaseFunctions:
     # Get the sequence number for the current month
@@ -33,7 +36,7 @@ class CoreDatabaseFunctions:
 
         while True:
 
-            sequence_number = DatabaseFunctions.get_sequence_number(
+            sequence_number = CoreDatabaseFunctions.get_sequence_number(
                 conn, current_month, current_year
             )
             sequence_number_int = int(sequence_number) + 1
@@ -176,3 +179,25 @@ class CoreDatabaseFunctions:
         except sqlite3.Error as e:
             print(f"Error retrieving trainee: {e}")
             return None
+        
+class ExportData:
+    @staticmethod
+    def export_trainees_for_tourney(db_path: Path, output_file: Path):
+        db_path = CORE_DB_PATH
+        c = sqlite3.connect(str(db_path))
+        cursor = c.cursor()
+        
+        query = "SELECT unique_trainee_id, first_name, last_name FROM trainees"
+        cursor.execute(query)
+        
+        rows = cursor.fetchall()
+        
+        with output_file.open("w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            
+            writer.writerow(["unique_trainee_id", "first_name", "last_name"])
+            
+            writer.writerow(rows)
+            
+            c.close()
+            print("Trainee data exported, and ready for tournament import")
