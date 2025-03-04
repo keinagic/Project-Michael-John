@@ -1,8 +1,8 @@
-# KOTS Project Plan
+# Project Michael John
 
-## What is Kots?
+## What is Project Michael John?
 
-Kots is a software aimed at helping debate coaches track the progress of their trainees.
+**PMJ** is a software aimed at helping debate coaches track the progress of their trainees.
 
 ## Features
 
@@ -67,4 +67,4 @@ Support for integrating with other debate tools and platforms for seamless data 
 
 ## Contact and Support
 
-For any questions, feedback, or support, please contact us at support@kots.com.
+For any questions, feedback, or support, please contact us at 

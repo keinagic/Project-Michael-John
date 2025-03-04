@@ -1,8 +1,9 @@
 test_database.py
 __pycache__/
 .pytest_cache/
-data/__pycache__/
-kots_interface/__pycache__/
+modules/database_modules/__pycache__/
+modules/user_interface_backend/__pycache__
+modules/__pycache__
 
 trainees.db
 tester.py

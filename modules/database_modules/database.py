@@ -2,11 +2,17 @@ import sqlite3
 from pathlib import Path
 import datetime
 
-DB_PATH = Path("trainees.db")
 
 
-def create_connection():
-    return sqlite3.connect(DB_PATH)
+
+def create_connection(db_path: Path):
+    try:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path))
+        return conn
+    except sqlite3.Error as e:
+        print(f"Error making a database: {e}")
+        return None
 
 
 class CreateTables:
@@ -122,7 +128,7 @@ class DatabaseFunctions:
         while True:
 
             sequence_number = DatabaseFunctions.get_sequence_number(
-            conn, current_month, current_year
+                conn, current_month, current_year
             )
             sequence_number_int = int(sequence_number) + 1
             sequence_number_str = str(sequence_number_int).zfill(3)
@@ -130,7 +136,8 @@ class DatabaseFunctions:
 
             c = conn.cursor()
             c.execute(
-            "SELECT 1 FROM trainees WHERE unique_trainee_id = ?", (unique_trainee_id,)
+                "SELECT 1 FROM trainees WHERE unique_trainee_id = ?",
+                (unique_trainee_id,),
             )
             if c.fetchone() is None:
                 return unique_trainee_id
