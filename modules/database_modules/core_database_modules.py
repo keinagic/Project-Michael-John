@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 from cfg import CORE_ORGANIZATION_DATABASE as CORE_DB_PATH
 
+
 class CoreDatabaseFunctions:
     # Get the sequence number for the current month
     @staticmethod
@@ -67,7 +68,11 @@ class CoreDatabaseFunctions:
                 return None
             c.execute(
                 """
-                INSERT INTO trainees (unique_trainee_id, first_name, last_name, novice_status)
+                INSERT INTO trainees (
+                    unique_trainee_id,
+                    first_name, last_name,
+                    novice_status
+                    )
                 VALUES (?, ?, ?, ?)
                 """,
                 (unique_trainee_id, first_name, last_name, novice_status),
@@ -179,25 +184,20 @@ class CoreDatabaseFunctions:
         except sqlite3.Error as e:
             print(f"Error retrieving trainee: {e}")
             return None
-        
+
+
 class ExportData:
     @staticmethod
     def export_trainees_for_tourney(db_path: Path, output_file: Path):
         db_path = CORE_DB_PATH
         c = sqlite3.connect(str(db_path))
         cursor = c.cursor()
-        
         query = "SELECT unique_trainee_id, first_name, last_name FROM trainees"
         cursor.execute(query)
-        
         rows = cursor.fetchall()
-        
         with output_file.open("w", newline="", encoding="utf-8") as csvfile:
             writer = csv.writer(csvfile)
-            
             writer.writerow(["unique_trainee_id", "first_name", "last_name"])
-            
             writer.writerow(rows)
-            
             c.close()
             print("Trainee data exported, and ready for tournament import")

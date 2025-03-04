@@ -1,6 +1,6 @@
 import sqlite3
 from pathlib import Path
-from cfg import TOURNAMENT_NAME, TOURNAMENT_DIRECTORY, TOURNAMENT_DATABASE
+from cfg import TOURNAMENT_DATABASE
 from tournament_database import TournamentDatabaseTables as tdbtables
 import tournament_database as tdb
 import csv
@@ -15,6 +15,7 @@ class TournamentDatabaseModules:
         try:
             tdbtables.index_table_of_trainees()
         except sqlite3.Error as e:
+            print(e)
             return None
 
         with csv_file.open("r", newline="", encoding="utf8") as csvfile:

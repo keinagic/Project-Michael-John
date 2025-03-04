@@ -1,6 +1,7 @@
 import sqlite3
 from pathlib import Path
 
+
 def create_tourney_db_connection(tourney_db_path: Path):
     try:
         conn = sqlite3.connect(str(tourney_db_path))
@@ -8,6 +9,7 @@ def create_tourney_db_connection(tourney_db_path: Path):
     except sqlite3.Error as e:
         print(f"Error making a database: {e}")
         return None
+
 
 class TournamentDatabaseTables:
     @staticmethod
@@ -64,7 +66,7 @@ class TournamentDatabaseTables:
             conn.commit()
         except sqlite3.Error as e:
             print(f"Adjudicators table not created: {e}\nPlease retry.")
-            
+
     @staticmethod
     def create_teams(conn):
         # Create the teams table

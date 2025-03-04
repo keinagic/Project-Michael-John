@@ -1,4 +1,4 @@
-from pathlib import Path
+# from pathlib import Path
 from cfg import CORE_ORGANIZATION_DIRECTORY as CORE_DIR
 
 
@@ -12,7 +12,7 @@ class CoachInput:
     @staticmethod
     def get_database_list() -> list:
         # Hopefully useful enough to be used for UI eheheheh
-        database_paths = CORE_DIR
+        # database_paths = CORE_DIR
         db_files = [file.name for file in CORE_DIR.glob("*.db") if file.is_file()]
         return db_files
 

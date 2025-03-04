@@ -6,7 +6,7 @@ from modules.database_modules.core_database_checker import (
     table_exists,
 )
 from modules.database_modules.core_database import CreateMainTables
-from modules.mini_tournament_modules import(
+from modules.mini_tournament_modules import (
     ap_modules,
     bp_modules,
     common_modules,
