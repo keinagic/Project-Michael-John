@@ -1,7 +1,8 @@
 from pathlib import Path
-from modules.database_modules import database as db  # Make sure your module is imported correctly.
-from modules.user_interface_backend import user_inputs  # Adjust according to your actual module name.
-from modules.database_modules import database_checker  # Assuming this module is available.
+from modules.database_modules import database as db
+from modules.database_modules import database_functions
+from modules.user_interface_backend import user_inputs
+from modules.database_modules import database_checker
 
 class FoolProofing:
     # Placeholder will be replaced with user input from a UI.
@@ -31,10 +32,10 @@ class FoolProofing:
             if not database_checker.table_exists(conn, required_table):
                 print("Tables not found! Creating tables...")
                 try:
-                    db.CreateTables.create_trainees(conn)
-                    db.CreateTables.create_teams(conn)
-                    db.CreateTables.create_team_members(conn)
-                    db.CreateTables.create_scores(conn)
+                    db.CreateMainTables.create_trainees(conn)
+                    db.CreateMainTables.create_teams(conn)
+                    db.CreateMainTables.create_team_members(conn)
+                    db.CreateMainTables.create_scores(conn)
                     print("Tables created successfully.")
                     print("Verifying table creation...")
                     FoolProofing.check_database_integrity()
