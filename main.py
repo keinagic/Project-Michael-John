@@ -1,25 +1,39 @@
-import os
-from data import database, database_checker
+from data import database_checker
+from data import database as db
+
 
 class FoolProofing:
     @staticmethod
-    def create_tables():
-        # Create tables if they don't exist; make sure that there is a table to work with
-        conn = database.create_connection()
-        if not os.path.exists(database.DB_PATH):
+    def check_tables():
+        """Ensure that tables exist in the database."""
+        conn = db.create_connection()
+
+        # Check if at least one table exists
+        required_table = "trainees"  # Change this to a table that must exist
+        if not database_checker.table_exists(conn, required_table):
+            print("Tables not found! Creating tables...")
             try:
-                database.create_tables(conn)
-                print("Tables created successfully")
+                db.CreateTables.create_trainees(conn)
+                db.CreateTables.create_teams(conn)
+                db.CreateTables.create_team_members(conn)
+                db.CreateTables.create_scores(conn)
+                print("Tables created successfully.")
+                print("Verifying table creation...")
+                FoolProofing.check_database_integrity()
             except Exception as e:
                 print(f"Error creating tables: {e}")
             finally:
                 conn.close()
         else:
-            print("Database already exists")
+            print("Tables exist. Proceeding to integrity check.")
+            FoolProofing.check_database_integrity()
 
-    def check_db_integrity():
-        conn = database.create_connection()
+    @staticmethod
+    def check_database_integrity():
+        """Verify database schema integrity and apply fixes if necessary."""
+        conn = db.create_connection()
         try:
+            print("Checking database integrity...")
             database_checker.check_db_integrity(conn)
         except Exception as e:
             print(f"Error checking database integrity: {e}")
@@ -28,4 +42,4 @@ class FoolProofing:
 
 
 if __name__ == "__main__":
-    pass
+    FoolProofing.check_tables()

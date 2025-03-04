@@ -9,53 +9,84 @@ def create_connection():
     return sqlite3.connect(DB_PATH)
 
 
-def create_tables(conn):
-    c = conn.cursor()
-    # trainees table
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS trainees (
-            unique_trainee_id TEXT UNIQUE PRIMARY KEY,
-            last_name TEXT NOT NULL,
-            first_name TEXT NOT NULL,
-            novice_status INTEGER DEFAULT 1 --1 for Novice, 0 for Advanced
-        )
-        """
-    )
-    # scores table
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS scores(
-            trainee_id TEXT,
-            score REAL,
-            role TEXT CHECK(role IN ('Debater', 'Adjudicator')),
-            type TEXT CHECK(type IN ('Training', 'Tournament')),
-            FOREIGN KEY(trainee_id) REFERENCES trainees(unique_trainee_id)
-        )
-        """
-    )
-    # teams table
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS teams(
-            id INTEGER PRIMARY KEY, 
-            debate_format INTEGER, -- 1 for AsParl, 0 for BritParl
-            team_name TEXT
-        )
-        """
-    )
-    # team_members table
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS team_members(
-            team_id INTEGER,
-            trainee_id TEXT,
-            FOREIGN KEY(team_id) REFERENCES teams(id),
-            FOREIGN KEY(trainee_id) REFERENCES trainees(unique_trainee_id)
-        )
-        """
-    )
-    conn.commit()
+class CreateTables:
+    @staticmethod
+    def create_trainees(conn):
+        c = conn.cursor()
+        # trainees table
+        try:
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS trainees (
+                    unique_trainee_id TEXT PRIMARY KEY,
+                    first_name TEXT NOT NULL,
+                    last_name TEXT NOT NULL,
+                    novice_status INTEGER CHECK (novice_status IN(0,1))
+                )
+                """
+            )
+        except sqlite3.Error as e:
+            print(f"Error creating trainees table: {e}")
+        conn.commit()
+
+    @staticmethod
+    def create_scores(conn):
+        c = conn.cursor()
+        # scores table
+        try:
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scores(
+                    score_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trainee_id TEXT,
+                    score REAL,
+                    role TEXT CHECK(role IN ('Debater', 'Adjudicator')),
+                    score_type TEXT CHECK(score_type IN ('Training', 'Tournament')),
+                    FOREIGN KEY(trainee_id) REFERENCES trainees(unique_trainee_id)
+                )
+                """
+            )
+        except sqlite3.Error as e:
+            print(f"Error creating scores table: {e}")
+        conn.commit()
+
+    @staticmethod
+    def create_teams(conn):
+        c = conn.cursor()
+        # teams table
+        try:
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS teams(
+                    id INTEGER PRIMARY KEY, 
+                    debate_format INTEGER CHECK (debate_format IN(0,1)),
+                    team_name TEXT
+                )
+                """
+            )
+        except sqlite3.Error as e:
+            print(f"Error creating teams table: {e}")
+        conn.commit()
+
+    @staticmethod
+    def create_team_members(conn):
+        c = conn.cursor()
+        # team_members table
+        try:
+            c.execute(
+                """
+                CREATE TABLE IF NOT EXISTS team_members(
+                    team_id INTEGER,
+                    trainee_id TEXT,
+                    PRIMARY KEY(team_id, trainee_id),
+                    FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
+                    FOREIGN KEY(trainee_id) REFERENCES trainees(unique_trainee_id)
+                )
+                """
+            )
+        except sqlite3.Error as e:
+            print(f"Error creating team_members table: {e}")
+        conn.commit()
 
 
 class DatabaseFunctions:
@@ -75,7 +106,7 @@ class DatabaseFunctions:
             if sequence_number is None:
                 sequence_number = 0
             else:
-                sequence_number = int(sequence_number[4:])
+                sequence_number = int(sequence_number[-3:])
             return sequence_number
         except sqlite3.Error as e:
             print(f"Error retrieving sequence number: {e}")
@@ -87,25 +118,43 @@ class DatabaseFunctions:
         current_date = datetime.datetime.now().date()
         current_month = current_date.strftime("%m")
         current_year = current_date.strftime("%y")
-        sequence_number = DatabaseFunctions.get_sequence_number(
+
+        while True:
+
+            sequence_number = DatabaseFunctions.get_sequence_number(
             conn, current_month, current_year
-        )
-        sequence_number_int = int(sequence_number) + 1
-        sequence_number_str = str(sequence_number_int).zfill(3)
-        unique_trainee_id = f"{current_year}{current_month}{sequence_number_str}"
-        return unique_trainee_id
+            )
+            sequence_number_int = int(sequence_number) + 1
+            sequence_number_str = str(sequence_number_int).zfill(3)
+            unique_trainee_id = f"{current_year}{current_month}{sequence_number_str}"
+
+            c = conn.cursor()
+            c.execute(
+            "SELECT 1 FROM trainees WHERE unique_trainee_id = ?", (unique_trainee_id,)
+            )
+            if c.fetchone() is None:
+                return unique_trainee_id
 
     # Register a trainee
     @staticmethod
-    def register_trainee(conn, unique_trainee_id, last_name, first_name, novice_status=1):
+    def register_trainee(
+        conn, unique_trainee_id, last_name, first_name, novice_status=1
+    ):
         c = conn.cursor()
         try:
             c.execute(
+                "SELECT 1 FROM trainees WHERE unique_trainee_id = ?",
+                (unique_trainee_id,),
+            )
+            if c.fetchone():
+                print(f"Trainee {unique_trainee_id} already exists")
+                return None
+            c.execute(
                 """
-                INSERT INTO trainees (unique_trainee_id, last_name, first_name, novice_status)
+                INSERT INTO trainees (unique_trainee_id, first_name, last_name, novice_status)
                 VALUES (?, ?, ?, ?)
                 """,
-                (unique_trainee_id, last_name, first_name, novice_status),
+                (unique_trainee_id, first_name, last_name, novice_status),
             )
             conn.commit()
             print(f"Registered trainee: {unique_trainee_id}")
@@ -135,15 +184,21 @@ class DatabaseFunctions:
 
     # Add a score for a trainee
     @staticmethod
-    def add_score(conn, trainee_id, score, role, type):
+    def add_score(conn, trainee_id, score, role, score_type):
+        valid_roles = {"Debater", "Adjudicator"}
+        valid_types = {"Training", "Tournament"}
+
+        if role not in valid_roles or score_type not in valid_types:
+            print("Invalid role or score type")
+            return
         c = conn.cursor()
         try:
             c.execute(
                 """
-                INSERT INTO scores (trainee_id, score, role, type)
+                INSERT INTO scores (trainee_id, score, role, score_type)
                 VALUES (?, ?, ?, ?)
                 """,
-                (trainee_id, score, role, type),
+                (trainee_id, score, role, score_type),
             )
             conn.commit()
         except sqlite3.Error as e:
@@ -153,6 +208,10 @@ class DatabaseFunctions:
     # Create a team
     @staticmethod
     def create_team(conn, debate_format, team_name):
+        if debate_format not in (0, 1):
+            print("Invalid debate format.")
+            return None
+
         c = conn.cursor()
         try:
             c.execute(

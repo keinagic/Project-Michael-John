@@ -1,49 +1,45 @@
-import sqlite3
-
-
 def check_db_integrity(conn):
-    c = conn.cursor()
-
-    # Expected schemas (define these based on your application's requirements)
+    # Expected schemas based on the new database.py definitions
     expected_trainees_columns = {
         "unique_trainee_id": "TEXT",
-        "last_name": "TEXT",
         "first_name": "TEXT",
+        "last_name": "TEXT",
         "novice_status": "INTEGER",
     }
     expected_scores_columns = {
-        "id": "INTEGER",
-        "trainee_id": "INTEGER",
+        "score_id": "INTEGER",  # Primary key AUTOINCREMENT
+        "trainee_id": "TEXT",  # Matches trainees.unique_trainee_id type
         "score": "REAL",
         "role": "TEXT",
-        "type": "TEXT",
+        "score_type": "TEXT",  # Renamed from 'type'
     }
-    expected_teams_columns = {"id": "INTEGER", "format": "TEXT", "team_name": "TEXT"}
-    expected_team_members_columns = {
+    expected_teams_columns = {
         "id": "INTEGER",
+        "debate_format": "INTEGER",  # Renamed from 'format'
+        "team_name": "TEXT",
+    }
+    expected_team_members_columns = {
         "team_id": "INTEGER",
         "trainee_id": "TEXT",
     }
 
-    # Check trainees table
-    check_table_schema(conn, "trainees", expected_trainees_columns)
-
-    # Check scores table
-    check_table_schema(conn, "scores", expected_scores_columns)
-
-    # Check teams table
-    check_table_schema(conn, "teams", expected_teams_columns)
-
-    # Check team_members table
-    check_table_schema(conn, "team_members", expected_team_members_columns)
+    # Check if tables exist before validating their schema
+    for table_name, expected_columns in {
+        "trainees": expected_trainees_columns,
+        "scores": expected_scores_columns,
+        "teams": expected_teams_columns,
+        "team_members": expected_team_members_columns,
+    }.items():
+        if table_exists(conn, table_name):
+            check_table_schema(conn, table_name, expected_columns)
+        else:
+            print(f"Table '{table_name}' does not exist.")
 
 
 def check_table_schema(conn, table_name, expected_columns):
     c = conn.cursor()
     c.execute(f"PRAGMA table_info({table_name})")
-    actual_columns = {
-        col[1]: col[2] for col in c.fetchall()
-    }  
+    actual_columns = {col[1]: col[2] for col in c.fetchall()}
 
     missing_columns = [col for col in expected_columns if col not in actual_columns]
     extra_columns = [col for col in actual_columns if col not in expected_columns]
@@ -83,6 +79,14 @@ def apply_schema_changes(conn, table_name, expected_columns, actual_columns):
             print(f"Added column '{col}' to '{table_name}'.")
         elif col in actual_columns and expected_columns[col] != actual_columns[col]:
             print(
-                f"Type change for column '{col}' is not automatically applied. Manual intervention is needed"
-            )  # sqlite does not allow changing column type.
+                f"Type change for column '{col}' is not automatically applied. Manual intervention is needed."
+            )
     conn.commit()
+
+
+def table_exists(conn, table_name):
+    c = conn.cursor()
+    c.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,)
+    )
+    return c.fetchone() is not None
